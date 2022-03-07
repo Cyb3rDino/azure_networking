@@ -17,7 +17,7 @@
     },
     "workbookSourceId": {
       "type": "string",
-      "defaultValue": "/subscriptions/43f80edb-9335-4f90-bb83-fc3ef9ac835e/resourceGroups/rg-laws-sentinel-lab/providers/Microsoft.OperationalInsights/workspaces/lawsentinellab",
+      "defaultValue": "Azure Monitor",
       "metadata": {
         "description": "The id of resource instance to which the workbook will be associated"
       }
