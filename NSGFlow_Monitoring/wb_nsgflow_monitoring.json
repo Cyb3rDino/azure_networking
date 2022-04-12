@@ -23,7 +23,7 @@
             "properties": {
                 "galleries": [
                     {
-                        "name": "NSG-Flow Monitoring",
+                        "name": "NSG-Flow-Log Monitoring",
                         "category": "Network Workbook",
                         "order": 100,
                         "resourceType": "Azure Monitor"
