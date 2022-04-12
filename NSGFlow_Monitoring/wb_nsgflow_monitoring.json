@@ -4,7 +4,7 @@
     "parameters": {
         	"WorkbookName": {
 			"type": "string",
-			"defaultValue": "test-template",
+			"defaultValue": "NSG-Flow-Log_Monitoring_Workbook",
 			"metadata": {
 				"description": "The unique name for this workbook template instance"
 			}
