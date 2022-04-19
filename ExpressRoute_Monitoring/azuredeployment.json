@@ -1,0 +1,748 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "WorkbookName": {
+			"type": "string",
+			"defaultValue": "NSG-Flow-Log_Monitoring_Workbook",
+			"metadata": {
+				"description": "The unique name for this workbook template instance"
+			}
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [{
+        "name": "[parameters('WorkbookName')]",
+            "type": "Microsoft.Insights/workbooktemplates",
+            "location": "[resourceGroup().location]",
+            "kind": "shared",
+            "apiVersion": "2020-11-20",
+            "dependsOn": [],
+            "properties": {
+                "galleries": [
+                    {
+                        "name": "ExpressRoute Monitoring",
+                        "category": "Network Workbook",
+                        "order": 110,
+                        "resourceType": "Azure Monitor"
+                    }
+                ],
+             "templateData": {
+                 
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Network Traffic Monitoring - ExpressRouteTraffic\r\n---\r\n\r\n## Content\r\nThis Workbook displays different types of Information regarding Traffig going through the ExpressRoute Connection.\r\n\r\n- All ExPressRoute Ressource and there current state.\r\n- The incoming/outgoing traffic that runs via the ExpressRoute.\r\n- Inbound/outbound traffic log: \r\n\t- Who is talking in which direction. \r\n\t- What is he talking.\r\n\t- When was he talking.\r\n\t- Which amount of Network traffic was caused.\r\n\t\r\n## Reference articles\r\n\r\n💡 [Microsoft Docs: ExpressRoute](https://docs.microsoft.com/de-de/azure/expressroute/) <br>\r\n\r\n💡 [Azure Region Map](https://infrastructuremap.microsoft.com/)<br>\r\n\r\n💡 [ExpressRoute Monitoring](https://docs.microsoft.com/de-de/azure/expressroute/expressroute-monitoring-metrics-alerts)<br>\r\n\r\n💡 [Types of ExPressRoute Peerings](https://docs.microsoft.com/en-us/azure/expressroute/expressroute-circuit-peerings#routingdomains)<br>\r\n"
+      },
+      "name": "text - 0"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "68d0031a-241c-4959-bb73-c742f9fc478b",
+            "cellValue": "showflowlogConf",
+            "linkTarget": "parameter",
+            "linkLabel": "Monitoring",
+            "subTarget": "False",
+            "style": "link"
+          },
+          {
+            "id": "c680221d-cbb3-47c4-a342-cba0d88b74ed",
+            "cellValue": "showflowlogConf",
+            "linkTarget": "parameter",
+            "linkLabel": "FlowLog Configuration",
+            "subTarget": "True",
+            "preText": "Display FlowLog Configuration",
+            "postText": "Display FlowLog Configuration",
+            "style": "link"
+          }
+        ]
+      },
+      "name": "links - 6"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "cfa14475-1586-4efc-baf9-743eab15a291",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceTypes",
+            "type": 7,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "value": [
+              "microsoft.network/networksecuritygroups"
+            ],
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "additionalResourceOptions": [],
+              "includeAll": true
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "deef131d-f0ce-46a2-b3b5-3db94a72cf7c",
+            "version": "KqlParameterItem/1.0",
+            "name": "Subscription",
+            "label": "Subscriptions",
+            "type": 6,
+            "description": "All Subscriptions",
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "Resources\r\n| where type in~ ({ResourceTypes})\r\n| summarize Count = count() by subscriptionId\r\n| order by Count desc\r\n| extend Rank = row_number()\r\n| project value = subscriptionId, label = subscriptionId, selected = Rank == 1",
+            "crossComponentResources": [
+              "value::selected"
+            ],
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "678f9776-bba1-4cd1-9d04-2d254bd0071a",
+            "version": "KqlParameterItem/1.0",
+            "name": "ResourceGroups",
+            "label": "Resource groups",
+            "type": 2,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "Resources\r\n| where type in~ ({ResourceTypes})\r\n| summarize Count = count() by subscriptionId, resourceGroup\r\n| order by Count desc\r\n| extend Rank = row_number()\r\n| project value = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup), label = resourceGroup, selected = false",
+            "crossComponentResources": [
+              "{Subscription}"
+            ],
+            "value": [
+              "value::all"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "a12bcd91-6815-45ca-863c-a73444406198",
+            "version": "KqlParameterItem/1.0",
+            "name": "Resources",
+            "label": "Network Security Groups",
+            "type": 7,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "Resources\r\n| where type in~({ResourceTypes})\r\n| extend resourceGroupId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup)\r\n| where resourceGroupId in~({ResourceGroups}) or '*' in~({ResourceGroups})\r\n| order by name asc\r\n| extend Rank = row_number()\r\n| project value = id, label = name, selected = Rank <= 10, group = resourceGroup",
+            "crossComponentResources": [
+              "{Subscription}"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": [
+              "value::all"
+            ]
+          },
+          {
+            "id": "8625b2d4-d4c3-4fe2-b504-2e51d5512cd7",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time Range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 14400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 900000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 259200000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 2592000000
+                },
+                {
+                  "durationMs": 7776000000
+                }
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "42dc4cb1-2ac7-44ed-8b0a-01c200f8539f",
+            "version": "KqlParameterItem/1.0",
+            "name": "nsgWithTrafficAnalytics",
+            "label": "NSG With Flow Logs and Traffic Analyitcs",
+            "type": 1,
+            "query": "Resources\r\n| where type =~ 'Microsoft.Network/networkWatchers/flowlogs'\r\n| extend provisioningState = parse_json(properties).provisioningState \r\n| extend workspaceResourceId = tostring(parse_json(parse_json(parse_json(properties).flowAnalyticsConfiguration).networkWatcherFlowAnalyticsConfiguration).workspaceResourceId)\r\n| extend targetResourceId = iff(notempty(workspaceResourceId) and provisioningState == \"Succeeded\", tostring(parse_json(properties).targetResourceId), \"null\" ) \r\n| distinct targetResourceId",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "isHiddenWhenLocked": true,
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "5f2d1a27-bc6a-4506-9bd2-c2bad0326333",
+            "version": "KqlParameterItem/1.0",
+            "name": "logWorkspaceWithFlowLogs",
+            "type": 5,
+            "isRequired": true,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "Resources\r\n| where type =~ 'Microsoft.Network/networkWatchers/flowlogs'\r\n| order by name asc\r\n| extend Rank = row_number()\r\n| extend provisioningState = parse_json(properties).provisioningState \r\n| extend workspaceResourceId = tostring(parse_json(parse_json(parse_json(properties).flowAnalyticsConfiguration).networkWatcherFlowAnalyticsConfiguration).workspaceResourceId)\r\n| where workspaceResourceId != \"\" and provisioningState == \"Succeeded\"\r\n| project value = tostring(parse_json(properties).targetResourceId), label = tostring(parse_json(properties).targetResourceId), workspaceResourceId, provisioningState\r\n| distinct workspaceResourceId",
+            "crossComponentResources": [
+              "value::all"
+            ],
+            "value": [
+            ],
+            "isHiddenWhenLocked": true,
+            "typeSettings": {
+              "additionalResourceOptions": [
+                "value::all"
+              ]
+            },
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "0e6b9f5b-ba2c-402d-9821-798823e3527e",
+            "version": "KqlParameterItem/1.0",
+            "name": "nsgWithFlowLogs",
+            "label": "NSG With Flow Logs",
+            "type": 1,
+            "query": "Resources\r\n| where type =~ 'Microsoft.Network/networkWatchers/flowlogs'\r\n| extend provisioningState = parse_json(properties).provisioningState \r\n| extend targetResourceId = iff(provisioningState == \"Succeeded\", tostring(parse_json(properties).targetResourceId), \"null\" ) \r\n| distinct targetResourceId",
+            "crossComponentResources": [
+              "{Subscription}"
+            ],
+            "isHiddenWhenLocked": true,
+            "timeContext": {
+              "durationMs": 86400000
+            },
+            "queryType": 1,
+            "resourceType": "microsoft.resourcegraph/resources"
+          },
+          {
+            "id": "3fd01e16-b29d-4e08-b4cc-175a60a463a6",
+            "version": "KqlParameterItem/1.0",
+            "name": "action",
+            "label": "Action to Filter on",
+            "type": 2,
+            "multiSelect": true,
+            "quote": "'",
+            "delimiter": ",",
+            "query": "{\"version\":\"1.0.0\",\"content\":\"[{\\\"value\\\":\\\"A\\\",\\\"label\\\": \\\"Allow\\\"},{\\\"value\\\":\\\"D\\\",\\\"label\\\": \\\"Deny\\\"}]\",\"transformers\":null}",
+            "value": [
+              "A"
+            ],
+            "typeSettings": {
+              "additionalResourceOptions": []
+            },
+            "queryType": 8
+          },
+          {
+            "id": "fb329840-b7c1-451b-a8c3-17507f7e2f41",
+            "version": "KqlParameterItem/1.0",
+            "name": "mySourceIP",
+            "label": "Source Ip to filter on",
+            "type": 1,
+            "value": "",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          },
+          {
+            "id": "f6ad1b8b-4799-4149-afba-5daac5c9d196",
+            "version": "KqlParameterItem/1.0",
+            "name": "myTargetIP",
+            "label": "Target Ip to filter on",
+            "type": 1,
+            "value": "",
+            "timeContext": {
+              "durationMs": 86400000
+            }
+          }
+        ],
+        "style": "above",
+        "queryType": 0,
+        "resourceType": "microsoft.resourcegraph/resources"
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "False"
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "Resources\r\n| where type contains \"express\"\r\n| extend resourceGroupId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup)\r\n| where resourceGroupId in~({ResourceGroups}) or '*' in~({ResourceGroups})\r\n| project Subscription = subscriptionId, ['Resource group'] = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup), ['Network Security Group'] = id, CircuitState=(properties.circuitProvisioningState),ServiceProviderState=(properties.serviceProviderProvisioningState), [\"Resource Region\"]=location, PeeringLocation=(properties.serviceProviderProperties.peeringLocation), Provider=(properties.serviceProviderProperties.serviceProviderName), BandwithInMbps=(properties.serviceProviderProperties.bandwidthInMbps), GlobalReachEnabled=(properties.globalReachEnabled), RessourceOwner=(tags.owner), Purpose=(tags.purpose),Team=(tags.team)",
+        "size": 1,
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": [
+          "{Subscription}"
+        ],
+        "visualization": "table",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Subscription",
+              "formatter": 15,
+              "formatOptions": {
+                "linkTarget": "Resource",
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "CircuitState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Disabled",
+                    "representation": "redBright",
+                    "text": "Disabled"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Enabled",
+                    "representation": "green",
+                    "text": "Enabled"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "gray",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "ServiceProviderState",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "Provisioned",
+                    "representation": "green",
+                    "text": "Provisioned"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "redBright",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "tags",
+              "formatter": 7,
+              "formatOptions": {
+                "linkTarget": "CellDetails",
+                "linkLabel": "Display Tags",
+                "linkIsContextBlade": true
+              }
+            },
+            {
+              "columnMatch": "Subcription",
+              "formatter": 15,
+              "formatOptions": {
+                "linkTarget": null,
+                "showIcon": true
+              }
+            }
+          ]
+        },
+        "sortBy": []
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "False"
+      },
+      "name": "query - 2"
+    },
+    {
+      "type": 10,
+      "content": {
+        "chartId": "workbook91aeb6d2-d0b6-4b76-8a55-cd9e1fb4c4c8",
+        "version": "MetricsItem/2.0",
+        "size": 0,
+        "chartType": 2,
+        "resourceType": "microsoft.network/expressroutecircuits",
+        "metricScope": 0,
+        "resourceIds": [
+        ],
+        "timeContextFromParameter": "TimeRange",
+        "timeContext": {
+          "durationMs": 14400000
+        },
+        "metrics": [
+          {
+            "namespace": "microsoft.network/expressroutecircuits",
+            "metric": "microsoft.network/expressroutecircuits-Circuit Traffic-BitsOutPerSecond",
+            "aggregation": 1,
+            "splitBy": null,
+            "columnName": "BitsOutPerSecond"
+          },
+          {
+            "namespace": "microsoft.network/expressroutecircuits",
+            "metric": "microsoft.network/expressroutecircuits-Circuit Traffic-BitsInPerSecond",
+            "aggregation": 1,
+            "columnName": "BitsInPerSecond"
+          }
+        ],
+        "gridSettings": {
+          "rowLimit": 10000
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "False"
+      },
+      "name": "metric - 5"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend UsedConnectionName=split(ConnectionName_s,'/',2)\r\n| extend split(ConnectionName_s,'/',2)\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"I\"\r\n| where \"{action}\" has FlowStatus_s\r\n| where SrcIP_s has \"{mySourceIP}\"\r\n| where DestIP_s has \"{myTargetIP}\" \r\n| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s,ConnectionName=ConnectionName_s",
+        "size": 0,
+        "title": "Show Incoming Traffic",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Direction",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "I",
+                    "representation": "down",
+                    "text": "Inbound"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "O",
+                    "representation": "up",
+                    "text": "Outbound"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "success",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "RuleAction",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "A",
+                    "representation": "success",
+                    "text": "Allow"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "D",
+                    "representation": "disabled",
+                    "text": "Deny"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "UsedConnectionName",
+              "formatter": 1,
+              "numberFormat": {
+                "unit": 0,
+                "options": {
+                  "style": "decimal"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "False"
+      },
+      "name": "query - 3"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend split(ConnectionName_s,'/',2)\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"O\"\r\n| where \"{action}\" has FlowStatus_s\r\n| where SrcIP_s has \"{mySourceIP}\"\r\n| where DestIP_s has \"{myTargetIP}\" \r\n| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s, ConnectionName=ConnectionName_s",
+        "size": 0,
+        "title": "Show Outgoing Traffic",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "Direction",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "I",
+                    "representation": "down",
+                    "text": "Inbound"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "O",
+                    "representation": "up",
+                    "text": "Outbound"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "RuleAction",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "D",
+                    "representation": "disabled",
+                    "text": "Deny"
+                  },
+                  {
+                    "operator": "==",
+                    "thresholdValue": "A",
+                    "representation": "success",
+                    "text": "Allow"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "warning",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "False"
+      },
+      "name": "query - 3 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "resources\r\n| where type == \"microsoft.network/networkwatchers/flowlogs\"\r\n| extend LogAnalyticsRegion=(properties.flowAnalyticsConfiguration.networkWatcherFlowAnalyticsConfiguration.workspaceRegion)\r\n| extend NSG=(properties.targetResourceId)\r\n| extend FlowLogEnabled=(properties.flowAnalyticsConfiguration.networkWatcherFlowAnalyticsConfiguration.enabled)\r\n| extend UpdateIntervalInMinutes=(properties.flowAnalyticsConfiguration.networkWatcherFlowAnalyticsConfiguration.trafficAnalyticsInterval)\r\n| extend LogAnalyticsWS=(properties.flowAnalyticsConfiguration.networkWatcherFlowAnalyticsConfiguration.workspaceResourceId)\r\n| extend RetentionStatus=(properties.retentionPolicy.enabled)\r\n| extend RetentionDays=(properties.retentionPolicy.days)\r\n| project NSG,FlowLogEnabled,UpdateIntervalInMinutes,LogAnalyticsWS,LogAnalyticsRegion,RetentionStatus,RetentionDays\r\n",
+        "size": 0,
+        "queryType": 1,
+        "resourceType": "microsoft.resourcegraph/resources",
+        "crossComponentResources": [
+          "value::all"
+        ],
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "NSG",
+              "formatter": 13,
+              "formatOptions": {
+                "linkTarget": null,
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "FlowLogEnabled",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "colors",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "true",
+                    "representation": "green",
+                    "text": "true"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "orange",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            },
+            {
+              "columnMatch": "LogAnalyticsWS",
+              "formatter": 13,
+              "formatOptions": {
+                "linkTarget": null,
+                "showIcon": true
+              }
+            },
+            {
+              "columnMatch": "RetentionStatus",
+              "formatter": 18,
+              "formatOptions": {
+                "thresholdsOptions": "icons",
+                "thresholdsGrid": [
+                  {
+                    "operator": "==",
+                    "thresholdValue": "true",
+                    "representation": "success",
+                    "text": "Activated"
+                  },
+                  {
+                    "operator": "Default",
+                    "thresholdValue": null,
+                    "representation": "1",
+                    "text": "{0}{1}"
+                  }
+                ]
+              }
+            }
+          ],
+          "sortBy": [
+            {
+              "itemKey": "$gen_thresholds_FlowLogEnabled_1",
+              "sortOrder": 1
+            }
+          ]
+        },
+        "sortBy": [
+          {
+            "itemKey": "$gen_thresholds_FlowLogEnabled_1",
+            "sortOrder": 1
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "showflowlogConf",
+        "comparison": "isEqualTo",
+        "value": "True"
+      },
+      "name": "query - 7"
+    }
+  ],
+  "fallbackResourceIds": [
+    "azure monitor"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+
+             }   
+            }
+          }
+    ],
+    "outputs": {}
+}
