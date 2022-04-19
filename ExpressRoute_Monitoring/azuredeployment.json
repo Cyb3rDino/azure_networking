@@ -240,7 +240,8 @@
               "durationMs": 86400000
             },
             "queryType": 1,
-            "resourceType": "microsoft.resourcegraph/resources"
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": ""
           },
           {
             "id": "5f2d1a27-bc6a-4506-9bd2-c2bad0326333",
@@ -284,7 +285,8 @@
               "durationMs": 86400000
             },
             "queryType": 1,
-            "resourceType": "microsoft.resourcegraph/resources"
+            "resourceType": "microsoft.resourcegraph/resources",
+            "value": ""
           },
           {
             "id": "3fd01e16-b29d-4e08-b4cc-175a60a463a6",
@@ -342,7 +344,7 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "Resources\r\n| where type contains \"express\"\r\n| extend resourceGroupId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup)\r\n| where resourceGroupId in~({ResourceGroups}) or '*' in~({ResourceGroups})\r\n| project Subscription = subscriptionId, ['Resource group'] = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup), ['Network Security Group'] = id, CircuitState=(properties.circuitProvisioningState),ServiceProviderState=(properties.serviceProviderProvisioningState), [\"Resource Region\"]=location, PeeringLocation=(properties.serviceProviderProperties.peeringLocation), Provider=(properties.serviceProviderProperties.serviceProviderName), BandwithInMbps=(properties.serviceProviderProperties.bandwidthInMbps), GlobalReachEnabled=(properties.globalReachEnabled), RessourceOwner=(tags.owner), Purpose=(tags.purpose),Team=(tags.team)",
+        "query": "Resources\r\n| where type contains \"express\"\r\n| extend resourceGroupId = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup)\r\n| where resourceGroupId in~({ResourceGroups}) or '*' in~({ResourceGroups})\r\n| project Subscription = subscriptionId, ['Resource group'] = strcat('/subscriptions/', subscriptionId, '/resourceGroups/', resourceGroup), ['ExpressRoute Circuit'] = id, CircuitState=(properties.circuitProvisioningState),ServiceProviderState=(properties.serviceProviderProvisioningState), [\"Resource Region\"]=location, PeeringLocation=(properties.serviceProviderProperties.peeringLocation), Provider=(properties.serviceProviderProperties.serviceProviderName), BandwithInMbps=(properties.serviceProviderProperties.bandwidthInMbps), GlobalReachEnabled=(properties.globalReachEnabled), RessourceOwner=(tags.owner), Purpose=(tags.purpose),Team=(tags.team)",
         "size": 1,
         "queryType": 1,
         "resourceType": "microsoft.resourcegraph/resources",
@@ -446,8 +448,6 @@
         "resourceType": "microsoft.network/expressroutecircuits",
         "metricScope": 0,
         "resourceIds": [
-          "/subscriptions/bc55186d-f64d-4c63-ab4a-995827506023/resourceGroups/network-msn-itde-rg01/providers/Microsoft.Network/expressRouteCircuits/msn-vnet001-er01",
-          "/subscriptions/70f80c64-b711-4381-b2a0-48c58ce91b98/resourceGroups/network-mse-itde-rg01/providers/Microsoft.Network/expressRouteCircuits/mse-expr-vnet001"
         ],
         "timeContextFromParameter": "TimeRange",
         "timeContext": {
@@ -478,6 +478,115 @@
         "value": "False"
       },
       "name": "metric - 5"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend UsedConnectionName=split(ConnectionName_s,'/',2)\r\n| extend split(ConnectionName_s,'/',2)\r\n| where \"{action}\" has FlowStatus_s\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"I\"\r\n| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s,ConnectionName=ConnectionName_s\r\n| top-hitters 5 of SourceIP\r\n| project SourceIP",
+        "size": 3,
+        "title": "TOP SourceIP",
+        "noDataMessageStyle": 5,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "visualization": "card",
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        },
+        "textSettings": {
+          "style": "bignumber"
+        }
+      },
+      "customWidth": "10",
+      "name": "query - 8"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend UsedConnectionName=split(ConnectionName_s,'/',2)\r\n| extend split(ConnectionName_s,'/',2)\r\n| where \"{action}\" has FlowStatus_s\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"I\"\r\n| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s,ConnectionName=ConnectionName_s\r\n| top-hitters 5 of DestinationIP\r\n| project DestinationIP",
+        "size": 3,
+        "title": "TOP DestinationIP",
+        "noDataMessageStyle": 5,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "visualization": "card",
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        },
+        "textSettings": {
+          "style": "bignumber"
+        }
+      },
+      "customWidth": "10",
+      "name": "query - 8 - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend UsedConnectionName=split(ConnectionName_s,'/',2)\r\n| extend split(ConnectionName_s,'/',2)\r\n| where \"{action}\" has FlowStatus_s\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"I\"\r\n| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s,ConnectionName=ConnectionName_s\r\n| extend ConnectionNameforTOP=tostring(ConnectionName)\r\n| top-hitters 3 of  ConnectionNameforTOP\r\n| project Connection=ConnectionNameforTOP",
+        "size": 3,
+        "title": "TOP Used ExpressRouteConnection",
+        "noDataMessageStyle": 5,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "visualization": "card",
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        },
+        "textSettings": {
+          "style": "bignumber"
+        }
+      },
+      "customWidth": "20",
+      "name": "query - 8 - Copy - Copy"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n    and ResourceType == 'VirtualNetworkGateway'\r\n    and GatewayType_s == 'ExpressRoute'\r\n| extend SplittedSubnetNameWithRg = split(VirtualSubnetwork_s, '/')\r\n| extend\r\n    Gateway = strcat(Subscription_g, '/', Name_s),\r\n    VNet = strcat(Subscription_g, '/', SplittedSubnetNameWithRg[0], '/', SplittedSubnetNameWithRg[1])\r\n| distinct Gateway\r\n| join kind=inner (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'Topology'\r\n        and ResourceType == 'VirtualNetworkGatewayConnection'\r\n        and ConnectionType_s == 'ExpressRoute'\r\n| project\r\n        ConnectionName_s = strcat(Subscription_g, '/', Name_s),\r\n        Gateway = VirtualNetworkGateway1_s\r\n| distinct ConnectionName_s, Gateway)\r\n    on Gateway\r\n| distinct Gateway, ConnectionName_s\r\n| join kind = inner                 (AzureNetworkAnalytics_CL\r\n| where SubType_s == 'FlowLog'\r\n        and (FASchemaVersion_s == '1' or FASchemaVersion_s == '2')\r\n        and FlowStartTime_t {TimeRange}\r\n| where FlowType_s == 'S2S' and ConnectionType_s == 'ExpressRoute')\r\n    on ConnectionName_s\r\n| extend InboundByte=format_bytes(InboundBytes_d,2)\r\n| extend OutboundByte=format_bytes(OutboundBytes_d,2)\r\n| extend NSGRuleName=tostring(split(NSGRules_s,'|',1)[0])\r\n| extend NSGName=tostring(split(NSGList_s,'/',2)[0])\r\n| extend TotalTraffic_r= InboundBytes_d + OutboundBytes_d\r\n| extend TotalTraffic=format_bytes(TotalTraffic_r)\r\n| extend UsedConnectionName=split(ConnectionName_s,'/',2)\r\n| extend split(ConnectionName_s,'/',2)\r\n| where \"{action}\" has FlowStatus_s\r\n| mv-expand ConnectionName_s\r\n| where FlowDirection_s contains \"I\"\r\n//| project FlowStartTime_t,Direction=FlowDirection_s,SourceIP=SrcIP_s,DestinationIP=DestIP_s,DestinationPort=DestPort_d,Protocol=L7Protocol_s, NsgRule=NSGRule_s, InboundByte, OutboundByte,TotalTraffic, RuleAction=FlowStatus_s,ConnectionName=ConnectionName_s\r\n| top-hitters 1 of  Region2_s\r\n| project TOPRegion=Region2_s",
+        "size": 3,
+        "title": "TOP Used Region - ER Traffic",
+        "noDataMessageStyle": 5,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "crossComponentResources": [
+          "{logWorkspaceWithFlowLogs}"
+        ],
+        "visualization": "card",
+        "tileSettings": {
+          "showBorder": false
+        },
+        "graphSettings": {
+          "type": 0
+        },
+        "textSettings": {
+          "style": "bignumber"
+        }
+      },
+      "customWidth": "20",
+      "name": "query - 8 - Copy - Copy - Copy"
     },
     {
       "type": 3,
