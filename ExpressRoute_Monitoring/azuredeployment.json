@@ -29,7 +29,6 @@
                     }
                 ],
              "templateData": {
-                 
   "version": "Notebook/1.0",
   "items": [
     {
@@ -71,6 +70,9 @@
       "type": 9,
       "content": {
         "version": "KqlParameterItem/1.0",
+        "crossComponentResources": [
+          "value::all"
+        ],
         "parameters": [
           {
             "id": "cfa14475-1586-4efc-baf9-743eab15a291",
@@ -244,6 +246,7 @@
             "id": "5f2d1a27-bc6a-4506-9bd2-c2bad0326333",
             "version": "KqlParameterItem/1.0",
             "name": "logWorkspaceWithFlowLogs",
+            "label": "Log Analytics Workspace",
             "type": 5,
             "isRequired": true,
             "multiSelect": true,
@@ -253,13 +256,12 @@
             "crossComponentResources": [
               "value::all"
             ],
-            "value": [
-            ],
-            "isHiddenWhenLocked": true,
+            "value": [],
             "typeSettings": {
               "additionalResourceOptions": [
                 "value::all"
-              ]
+              ],
+              "showDefault": false
             },
             "timeContext": {
               "durationMs": 86400000
@@ -326,7 +328,7 @@
           }
         ],
         "style": "above",
-        "queryType": 0,
+        "queryType": 1,
         "resourceType": "microsoft.resourcegraph/resources"
       },
       "conditionalVisibility": {
@@ -444,6 +446,8 @@
         "resourceType": "microsoft.network/expressroutecircuits",
         "metricScope": 0,
         "resourceIds": [
+          "/subscriptions/bc55186d-f64d-4c63-ab4a-995827506023/resourceGroups/network-msn-itde-rg01/providers/Microsoft.Network/expressRouteCircuits/msn-vnet001-er01",
+          "/subscriptions/70f80c64-b711-4381-b2a0-48c58ce91b98/resourceGroups/network-mse-itde-rg01/providers/Microsoft.Network/expressRouteCircuits/mse-expr-vnet001"
         ],
         "timeContextFromParameter": "TimeRange",
         "timeContext": {
@@ -739,8 +743,7 @@
     "azure monitor"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
-
-             }   
+                }   
             }
           }
     ],
