@@ -4,7 +4,7 @@
     "parameters": {
         "WorkbookName": {
 			"type": "string",
-			"defaultValue": "NSG-Flow-Log_Monitoring_Workbook",
+			"defaultValue": "WB-ExpressRoute_Monitoring",
 			"metadata": {
 				"description": "The unique name for this workbook template instance"
 			}
@@ -447,11 +447,10 @@
         "chartType": 2,
         "resourceType": "microsoft.network/expressroutecircuits",
         "metricScope": 0,
-        "resourceIds": [
-        ],
+        "resourceIds": [],
         "timeContextFromParameter": "TimeRange",
         "timeContext": {
-          "durationMs": 14400000
+          "durationMs": 0
         },
         "metrics": [
           {
